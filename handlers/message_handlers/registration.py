@@ -1,0 +1,164 @@
+import requests
+
+from telegram import Update, ReplyKeyboardRemove
+from telegram.ext import CallbackContext, ConversationHandler
+
+from utils.config import RegisterStep, settings
+from handlers.buttons.auth_buttons import send_contact, confirm_button
+
+
+# =========================
+# 1️⃣ Registration start
+# =========================
+def register_handler(update: Update, context: CallbackContext):
+    """
+    Registration boshlanish bosqichi.
+    Foydalanuvchidan ism va familiya so‘raladi.
+    """
+    query = update.callback_query
+    query.answer()
+
+    query.edit_message_text(
+        "📝 <b>Ro‘yxatdan o‘tish</b>\n\n"
+        "Iltimos, <b>ism</b> va <b>familiyangizni</b> kiriting.\n"
+        "Masalan: <code>Ali Valiyev</code>",
+        parse_mode="HTML"
+    )
+
+    return RegisterStep.FULL_NAME
+
+
+# =========================
+# 2️⃣ Full name
+# =========================
+def get_full_name(update: Update, context: CallbackContext):
+    """
+    Foydalanuvchidan ism va familiyani qabul qiladi.
+    """
+    text = update.message.text.strip()
+    parts = text.split()
+
+    if len(parts) < 2:
+        update.message.reply_html(
+            "❗ <b>Xatolik</b>\n\n"
+            "Iltimos ism va familiyangizni to‘liq kiriting.\n"
+            "Masalan: <code>Ali Valiyev</code>"
+        )
+        return RegisterStep.FULL_NAME
+
+    context.user_data['first_name'] = parts[0].title()
+    context.user_data['last_name'] = parts[1].title()
+
+    update.message.reply_html(
+        "📱 <b>Telefon raqam</b>\n\n"
+        "Quyidagi tugma orqali kontaktingizni yuboring 👇",
+        reply_markup=send_contact()
+    )
+
+    return RegisterStep.PHONE_NUMBER
+
+
+# =========================
+# 3️⃣ Phone number
+# =========================
+def get_phone_number(update: Update, context: CallbackContext):
+    """
+    Telefon raqamni qabul qiladi.
+    """
+    if not update.message.contact:
+        update.message.reply_text("❗ Iltimos tugma orqali kontakt yuboring.")
+        return RegisterStep.PHONE_NUMBER
+
+    context.user_data['contact'] = update.message.contact.phone_number
+
+    update.message.reply_html(
+        "🖼 <b>Profil rasmi</b>\n\n"
+        "Profilingiz uchun rasm yuboring.",
+        reply_markup=ReplyKeyboardRemove()
+    )
+
+    return RegisterStep.AVATAR
+
+
+# =========================
+# 4️⃣ Avatar
+# =========================
+def get_avatar_image(update: Update, context: CallbackContext):
+    """
+    Avatar qabul qiladi va tasdiqlash sahifasini ko‘rsatadi.
+    """
+    if not update.message.photo:
+        update.message.reply_text("❗ Iltimos rasm yuboring.")
+        return RegisterStep.AVATAR
+
+    file_id = update.message.photo[-1].file_id
+    context.user_data['file_id'] = file_id
+
+    caption = (
+        "📋 <b>Ma'lumotlaringizni tasdiqlang</b>\n\n"
+        f"👤 <b>Ism:</b> {context.user_data['first_name']}\n"
+        f"👤 <b>Familiya:</b> {context.user_data['last_name']}\n"
+        f"📱 <b>Telefon:</b> {context.user_data['contact']}\n\n"
+        "Ma'lumotlar to‘g‘rimi?"
+    )
+
+    update.message.reply_photo(
+        photo=file_id,
+        caption=caption,
+        reply_markup=confirm_button(),
+        parse_mode="HTML"
+    )
+
+    return RegisterStep.CONFIRM
+
+
+# =========================
+# 5️⃣ Confirm
+# =========================
+def confirm_data(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+
+    if query.data == "confirm_true":
+
+        data = {
+            "chat_id" : update.effective_user.id,
+            "username" :update.effective_user.username,
+            "first_name":  context.user_data['first_name'],
+            "last_name" : context.user_data['last_name'],
+            "phone_number": context.user_data['contact'],
+            "avatar":context.user_data['file_id']
+            }
+        print("CALLBACK:", query.data)
+
+        
+
+        request = requests.post(
+            settings.BASE_URL,
+            json=data,
+            timeout=5
+        )
+
+        if request.status_code == 200:
+            query.edit_message_caption(
+            caption=(
+                "✅ <b>Ma'lumotlaringiz tasdiqlandi!</b>\n\n"
+                "Ro‘yxatdan o‘tish muvaffaqiyatli yakunlandi 🎉"
+                ),
+                parse_mode="HTML"
+            )
+
+            context.user_data.clear()
+            return ConversationHandler.END
+
+    query.edit_message_caption(
+    caption=(
+        "🔁 <b>Qayta kiritish</b>\n\n"
+        "Iltimos, ism va familiyangizni qayta yuboring.\n"
+        "Masalan: <code>Ali Valiyev</code>"
+    ),
+    parse_mode="HTML"
+    )
+
+    return RegisterStep.FULL_NAME
+
