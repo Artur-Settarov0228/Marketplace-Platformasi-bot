@@ -87,6 +87,7 @@ def get_avatar_image(update: Update, context: CallbackContext):
     """
     Avatar qabul qiladi va tasdiqlash sahifasini ko‘rsatadi.
     """
+
     if not update.message.photo:
         update.message.reply_text("❗ Iltimos rasm yuboring.")
         return RegisterStep.AVATAR
@@ -119,46 +120,44 @@ def confirm_data(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
-    if query.data == "confirm_true":
+    print("CALLBACK:", query.data)
+
+    if query.data == "register:confirm":
 
         data = {
-            "chat_id" : update.effective_user.id,
-            "username" :update.effective_user.username,
-            "first_name":  context.user_data['first_name'],
-            "last_name" : context.user_data['last_name'],
+            "telegram_id": update.effective_user.id,
+            "username": update.effective_user.username,
+            "first_name": context.user_data['first_name'],
+            "last_name": context.user_data['last_name'],
             "phone_number": context.user_data['contact'],
-            "avatar":context.user_data['file_id']
-            }
-        print("CALLBACK:", query.data)
+            "avatar": context.user_data['file_id']
+        }
 
-        
-
-        request = requests.post(
-            settings.BASE_URL,
+        response = requests.post(
+            f"{settings.BASE_URL}/api/v1/auth/register/",
             json=data,
             timeout=5
         )
 
-        if request.status_code == 200:
+        if response.status_code == 201:
             query.edit_message_caption(
-            caption=(
-                "✅ <b>Ma'lumotlaringiz tasdiqlandi!</b>\n\n"
-                "Ro‘yxatdan o‘tish muvaffaqiyatli yakunlandi 🎉"
-                ),
+                caption="✅ Ro‘yxatdan o‘tish muvaffaqiyatli 🎉",
                 parse_mode="HTML"
             )
-
             context.user_data.clear()
             return ConversationHandler.END
 
-    query.edit_message_caption(
-    caption=(
-        "🔁 <b>Qayta kiritish</b>\n\n"
-        "Iltimos, ism va familiyangizni qayta yuboring.\n"
-        "Masalan: <code>Ali Valiyev</code>"
-    ),
-    parse_mode="HTML"
-    )
+        else:
+            query.edit_message_caption(
+                caption=f"❌ Server error: {response.text}",
+                parse_mode="HTML"
+            )
+            return RegisterStep.CONFIRM
 
-    return RegisterStep.FULL_NAME
+    elif query.data == "register:retry":
 
+        query.edit_message_caption(
+            caption="🔁 Iltimos ism va familiyangizni qayta kiriting.",
+            parse_mode="HTML"
+        )
+        return RegisterStep.FULL_NAME
