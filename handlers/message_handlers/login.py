@@ -3,47 +3,56 @@ import redis
 from telegram import Update
 from telegram.ext import CallbackContext
 
-# Redis connection (production'da settings orqali beriladi)
-r = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
+# Redis connection
+r = redis.Redis(
+    host='127.0.0.1',
+    port=6379,
+    db=0,
+    decode_responses=True
+)
+
+
+
+def generate_otp() -> str:
+    """6 xonali OTP generatsiya."""
+    return f"{random.randint(100000, 999999)}"
 
 
 def login_page(update: Update, context: CallbackContext):
     """
-    Telegram login sahifasi.
+    Telegram login flow (production-ready pattern)
 
-    Flow:
-        1. Foydalanuvchi /login bosadi.
-        2. Agar mavjud OTP hali tugamagan bo‘lsa — o‘sha kod qayta ko‘rsatiladi.
-        3. Agar mavjud bo‘lmasa — yangi 6 xonali OTP yaratiladi.
-        4. OTP Redis’da 2 daqiqa (120s) saqlanadi.
-    
-    Redis key structure:
-        login_code:{telegram_id} -> OTP
-
-    Security:
-        - OTP user bilan bog‘langan (code orqali user topilmaydi)
-        - TTL mavjud
+    Redis structure:
+        login_code:{code} -> telegram_id (TTL 120)
+        login_user:{telegram_id} -> code (TTL 120)
     """
 
-    telegram_id = update.effective_user.id
-    redis_key = f"login_code:{telegram_id}"
+    telegram_id = str(update.effective_user.id)
+    user_key = f"login_user:{telegram_id}"
 
-    # Mavjud OTP ni tekshirish
-    existing_code = r.get(redis_key)
+    # 1️⃣ Avval mavjud OTP borligini tekshiramiz
+    existing_code = r.get(user_key)
 
     if existing_code:
+        ttl = r.ttl(user_key)
+
         update.message.reply_html(
             "🔐 <b>Avvalgi kod hali amal qiladi</b>\n\n"
-            f"⏳ Amal qilish muddati: 2 daqiqa\n"
+            f"⏳ Qolgan vaqt: {ttl} sekund\n"
             f"🔢 Kod: <code>{existing_code}</code>"
         )
         return
 
-    # Yangi OTP generatsiya
-    new_code = str(random.randint(100000, 999999))
+    # 2️⃣ Yangi OTP generatsiya
+    new_code = generate_otp()
 
-    # Redis’da saqlash (120 sekund)
-    r.setex(redis_key, 120, new_code)
+    code_key = f"login_code:{new_code}"
+
+    # 3️⃣ Redis'ga saqlash (atomic tarzda)
+    pipe = r.pipeline()
+    pipe.setex(code_key, 120, telegram_id)
+    pipe.setex(user_key, 120, new_code)
+    pipe.execute()
 
     update.message.reply_html(
         "🔐 <b>Login kodi yaratildi</b>\n\n"
