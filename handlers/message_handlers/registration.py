@@ -72,8 +72,8 @@ def get_phone_number(update: Update, context: CallbackContext):
     context.user_data['contact'] = update.message.contact.phone_number
 
     update.message.reply_html(
-        "🖼 <b>Profil rasmi</b>\n\n"
-        "Profilingiz uchun rasm yuboring.",
+        " <b>Profile rasmi</b>\n\n"
+        "Profilingiz uchun rasm yuboring iltimos.",
         reply_markup=ReplyKeyboardRemove()
     )
 
