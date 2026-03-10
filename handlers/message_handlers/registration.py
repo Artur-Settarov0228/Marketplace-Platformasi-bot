@@ -7,9 +7,7 @@ from utils.config import RegisterStep, settings
 from handlers.buttons.auth_buttons import send_contact, confirm_button
 
 
-# =========================
-# 1️⃣ Registration start
-# =========================
+
 def register_handler(update: Update, context: CallbackContext):
     """
     Registration boshlanish bosqichi.
@@ -28,9 +26,7 @@ def register_handler(update: Update, context: CallbackContext):
     return RegisterStep.FULL_NAME
 
 
-# =========================
-# 2️⃣ Full name
-# =========================
+
 def get_full_name(update: Update, context: CallbackContext):
     """
     Foydalanuvchidan ism va familiyani qabul qiladi.
@@ -58,9 +54,7 @@ def get_full_name(update: Update, context: CallbackContext):
     return RegisterStep.PHONE_NUMBER
 
 
-# =========================
-# 3️⃣ Phone number
-# =========================
+
 def get_phone_number(update: Update, context: CallbackContext):
     """
     Telefon raqamni qabul qiladi.
@@ -80,9 +74,7 @@ def get_phone_number(update: Update, context: CallbackContext):
     return RegisterStep.AVATAR
 
 
-# =========================
-# 4️⃣ Avatar
-# =========================
+
 def get_avatar_image(update: Update, context: CallbackContext):
     """
     Avatar qabul qiladi va tasdiqlash sahifasini ko‘rsatadi.
@@ -113,9 +105,7 @@ def get_avatar_image(update: Update, context: CallbackContext):
     return RegisterStep.CONFIRM
 
 
-# =========================
-# 5️⃣ Confirm
-# =========================
+
 def confirm_data(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()

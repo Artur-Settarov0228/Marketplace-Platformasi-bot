@@ -30,7 +30,7 @@ def login_page(update: Update, context: CallbackContext):
     telegram_id = str(update.effective_user.id)
     user_key = f"login_user:{telegram_id}"
 
-    # 1️⃣ Avval mavjud OTP borligini tekshiramiz
+    #  Avval mavjud OTP borligini tekshiramiz
     existing_code = r.get(user_key)
 
     if existing_code:
@@ -43,12 +43,12 @@ def login_page(update: Update, context: CallbackContext):
         )
         return
 
-    # 2️⃣ Yangi OTP generatsiya
+    #  Yangi OTP generatsiya
     new_code = generate_otp()
 
     code_key = f"login_code:{new_code}"
 
-    # 3️⃣ Redis'ga saqlash (atomic tarzda)
+    #  Redis'ga saqlash (atomic tarzda)
     pipe = r.pipeline()
     pipe.setex(code_key, 120, telegram_id)
     pipe.setex(user_key, 120, new_code)

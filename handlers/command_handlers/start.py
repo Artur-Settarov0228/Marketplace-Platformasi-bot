@@ -26,7 +26,7 @@ def start_bot(update: Update, context: CallbackContext):
 
         data = response.json()
 
-        # ✅ User mavjud
+        #  User mavjud
         if data.get("status"):
             update.message.reply_html(
                 "🎉 <b>Xush kelibsiz!</b>\n\n"
@@ -34,7 +34,7 @@ def start_bot(update: Update, context: CallbackContext):
                 "Davom etish uchun: <b>/login</b>"
             )
 
-        # 🆕 User mavjud emas
+        #  User mavjud emas
         else:
             update.message.reply_html(
                 "📝 <b>Ro‘yxatdan o‘tish</b>\n\n"
