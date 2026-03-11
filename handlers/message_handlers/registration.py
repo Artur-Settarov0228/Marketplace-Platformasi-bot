@@ -104,9 +104,8 @@ def get_avatar_image(update: Update, context: CallbackContext):
 
     return RegisterStep.CONFIRM
 
-
-
 def confirm_data(update: Update, context: CallbackContext):
+
     query = update.callback_query
     query.answer()
 
@@ -130,12 +129,17 @@ def confirm_data(update: Update, context: CallbackContext):
                 timeout=5
             )
 
+            print("API STATUS:", response.status_code)
+            print("API RESPONSE:", response.text)
+
         except Exception as e:
+
             print("REQUEST ERROR:", e)
 
             query.edit_message_caption(
                 caption="❌ Server bilan bog‘lanib bo‘lmadi."
             )
+
             return RegisterStep.CONFIRM
 
 
