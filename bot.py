@@ -23,29 +23,11 @@ from utils.config import settings, RegisterStep
 def main():
     """
     Botni ishga tushirish funksiyasi.
-
-    Flow:
-        /start → mavjud user tekshiriladi
-        /login → OTP beriladi
-        register:start → ConversationHandler orqali register jarayoni
     """
 
-    # =========================
-    # Bot initialization
-    # =========================
-    updater = Updater(token=settings.TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
+    updater = Updater(settings.TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    # =========================
-    # Command Handlers
-    # =========================
-    dispatcher.add_handler(CommandHandler("start", start_bot))
-    dispatcher.add_handler(CommandHandler("login", login_page))
-
-    # Inline login tugmasi uchun
-    dispatcher.add_handler(
-        CallbackQueryHandler(login_page, pattern=r"^login_page$")
-    )
 
     # =========================
     # Registration Conversation
@@ -54,7 +36,7 @@ def main():
         entry_points=[
             CallbackQueryHandler(
                 register_handler,
-                pattern=r"^register:start$"
+                pattern="^register:start$"
             )
         ],
         states={
@@ -64,22 +46,25 @@ def main():
                     get_full_name
                 )
             ],
+
             RegisterStep.PHONE_NUMBER: [
                 MessageHandler(
                     Filters.contact,
                     get_phone_number
                 )
             ],
+
             RegisterStep.AVATAR: [
                 MessageHandler(
                     Filters.photo,
                     get_avatar_image
                 )
             ],
+
             RegisterStep.CONFIRM: [
                 CallbackQueryHandler(
                     confirm_data,
-                    pattern=r"^register:"
+                    pattern="^register:"
                 )
             ],
         },
@@ -88,19 +73,39 @@ def main():
         per_chat=True,
     )
 
-    dispatcher.add_handler(register_conversation)
+    # Conversation handlerni birinchi qo‘shamiz
+    dp.add_handler(register_conversation)
+
 
     # =========================
-    # Error Handler
+    # Command Handlers
+    # =========================
+    dp.add_handler(CommandHandler("start", start_bot))
+    dp.add_handler(CommandHandler("login", login_page))
+
+
+    # =========================
+    # Inline login tugmasi
+    # =========================
+    dp.add_handler(
+        CallbackQueryHandler(
+            login_page,
+            pattern="^login_page$"
+        )
+    )
+
+
+    # =========================
+    # Global Error Handler
     # =========================
     def error_handler(update, context):
-        """Global xatoliklarni log qiladi."""
-        print(f"Update {update} caused error {context.error}")
+        print("ERROR:", context.error)
 
-    dispatcher.add_error_handler(error_handler)
+    dp.add_error_handler(error_handler)
+
 
     # =========================
-    # Start Polling
+    # Botni ishga tushirish
     # =========================
     updater.start_polling()
     updater.idle()
