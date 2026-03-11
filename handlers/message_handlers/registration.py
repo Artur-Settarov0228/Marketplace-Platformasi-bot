@@ -129,9 +129,7 @@ def confirm_data(update: Update, context: CallbackContext):
                 timeout=5
             )
 
-            print("API STATUS:", response.status_code)
-            print("API RESPONSE:", response.text)
-
+       
         except Exception as e:
 
             print("REQUEST ERROR:", e)
