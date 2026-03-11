@@ -117,37 +117,54 @@ def confirm_data(update: Update, context: CallbackContext):
         data = {
             "telegram_id": update.effective_user.id,
             "username": update.effective_user.username,
-            "first_name": context.user_data['first_name'],
-            "last_name": context.user_data['last_name'],
-            "phone_number": context.user_data['contact'],
-            "avatar": context.user_data['file_id']
+            "first_name": context.user_data.get("first_name"),
+            "last_name": context.user_data.get("last_name"),
+            "phone_number": context.user_data.get("contact"),
+            "avatar": context.user_data.get("file_id"),
         }
 
-        response = requests.post(
-            f"{settings.BASE_URL}/api/v1/auth/register/",
-            json=data,
-            timeout=5
-        )
-
-        if response.status_code == 201:
-            query.edit_message_caption(
-                caption="✅ Ro‘yxatdan o‘tish muvaffaqiyatli 🎉",
-                parse_mode="HTML"
+        try:
+            response = requests.post(
+                f"{settings.BASE_URL}/api/v1/auth/register/",
+                json=data,
+                timeout=5
             )
-            context.user_data.clear()
-            return ConversationHandler.END
 
-        else:
-            query.edit_message_caption(
-                caption=f"❌ Server error: {response.text}",
-                parse_mode="HTML"
+            print("API STATUS:", response.status_code)
+            print("API RESPONSE:", response.text)
+
+        except Exception as e:
+            print("REQUEST ERROR:", e)
+
+            query.edit_message_text(
+                "❌ Server bilan bog‘lanib bo‘lmadi. Keyinroq urinib ko‘ring."
             )
             return RegisterStep.CONFIRM
 
+
+        if response.status_code == 201:
+
+            query.edit_message_text(
+                "✅ Ro‘yxatdan o‘tish muvaffaqiyatli 🎉"
+            )
+
+            context.user_data.clear()
+
+            return ConversationHandler.END
+
+        else:
+
+            query.edit_message_text(
+                f"❌ Server xatolik qaytardi:\n{response.text}"
+            )
+
+            return RegisterStep.CONFIRM
+
+
     elif query.data == "register:retry":
 
-        query.edit_message_caption(
-            caption="🔁 Iltimos ism va familiyangizni qayta kiriting.",
-            parse_mode="HTML"
+        query.edit_message_text(
+            "🔁 Iltimos ism va familiyangizni qayta kiriting."
         )
+
         return RegisterStep.FULL_NAME
