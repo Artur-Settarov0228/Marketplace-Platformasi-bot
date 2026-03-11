@@ -130,22 +130,19 @@ def confirm_data(update: Update, context: CallbackContext):
                 timeout=5
             )
 
-            print("API STATUS:", response.status_code)
-            print("API RESPONSE:", response.text)
-
         except Exception as e:
             print("REQUEST ERROR:", e)
 
-            query.edit_message_text(
-                "❌ Server bilan bog‘lanib bo‘lmadi. Keyinroq urinib ko‘ring."
+            query.edit_message_caption(
+                caption="❌ Server bilan bog‘lanib bo‘lmadi."
             )
             return RegisterStep.CONFIRM
 
 
         if response.status_code == 201:
 
-            query.edit_message_text(
-                "✅ Ro‘yxatdan o‘tish muvaffaqiyatli 🎉"
+            query.edit_message_caption(
+                caption="✅ Ro‘yxatdan o‘tish muvaffaqiyatli 🎉"
             )
 
             context.user_data.clear()
@@ -154,8 +151,8 @@ def confirm_data(update: Update, context: CallbackContext):
 
         else:
 
-            query.edit_message_text(
-                f"❌ Server xatolik qaytardi:\n{response.text}"
+            query.edit_message_caption(
+                caption=f"❌ Server xato qaytardi:\n{response.text}"
             )
 
             return RegisterStep.CONFIRM
@@ -163,8 +160,8 @@ def confirm_data(update: Update, context: CallbackContext):
 
     elif query.data == "register:retry":
 
-        query.edit_message_text(
-            "🔁 Iltimos ism va familiyangizni qayta kiriting."
+        query.edit_message_caption(
+            caption="🔁 Iltimos ism va familiyangizni qayta kiriting."
         )
 
         return RegisterStep.FULL_NAME
